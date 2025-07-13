@@ -5,10 +5,11 @@ import azure.functions as func
 from azure.iot.hub import IoTHubRegistryManager
 
 # IoT Hub 연결 문자열 (환경 변수로 설정)
-#IOT_HUB_CONNECTION_STRING = os.environ["IoTHubConnectionString"]
+# IOT_HUB_CONNECTION_STRING = os.environ["IoTHubConnectionString"]
+# NOTE: Hardcoding connection strings is generally not recommended for production.
+# Use Application Settings in Function App for secure storage.
 IOT_HUB_CONNECTION_STRING = "HostName=iothub-iot01.azure-devices.net;DeviceId=water-purifier-robot-01;SharedAccessKey=p5YkARBM6DYIzASe+Mzk95EiYFRjEzeQ63E9hbol/TI="
-
-ROBOT_DEVICE_ID = "water-purifier-robot-01" # IoT Hub에 등록된 로봇의 Device ID
+ROBOT_DEVICE_ID = "water-purifier-robot-01"
 
 logging.basicConfig(level=logging.INFO)
 
@@ -16,21 +17,26 @@ async def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
     try:
-        # Stream Analytics에서 보낸 JSON 데이터 읽기
         req_body = req.get_json()
-        logging.info(f"Received data from Stream Analytics: {req_body}")
+        logging.info(f"Received raw data from Stream Analytics: {req_body}")
 
-        # Stream Analytics가 배열로 보낼 수 있으므로 리스트 처리
-        # ASA의 출력 형식에 따라 단일 객체 또는 객체 배열일 수 있음.
-        # ASA에서 "JSON 배열로 직렬화" 옵션을 켜면 배열로 보냄.
+        data_list = []
         if isinstance(req_body, list):
             data_list = req_body
-        else:
+        elif req_body is not None: # Ensure it's not None if not a list
             data_list = [req_body]
+
+        if not data_list: # Handle empty list or no valid data after parsing
+            logging.info("Received empty or invalid data list from Stream Analytics. Returning 200 OK.")
+            return func.HttpResponse(
+                "No valid data in request body, but processed successfully (nothing to do).",
+                status_code=200 # Return 200 if nothing to process
+            )
 
         for data in data_list:
             command_to_send = None
-            command_type = data.get("command_type") # ASA 쿼리에서 생성한 명령 타입
+            # Use .get() with a default to avoid KeyError if fields are missing
+            command_type = data.get("command_type")
             sensor_id = data.get("sensor_id")
             reason_message = data.get("reason_message", "Water quality issue detected")
 
@@ -41,7 +47,7 @@ async def main(req: func.HttpRequest) -> func.HttpResponse:
             elif command_type == "activate_filter":
                 command_to_send = {"command": "activate_filter", "duration_minutes": 60, "reason": reason_message, "source_sensor": sensor_id}
             else:
-                logging.info(f"No specific command type detected or command type not supported: {command_type}")
+                logging.info(f"No specific command type detected or command type not supported for data: {data}. Skipping.")
 
             if command_to_send:
                 logging.info(f"Sending command to robot {ROBOT_DEVICE_ID}: {command_to_send}")
@@ -54,15 +60,16 @@ async def main(req: func.HttpRequest) -> func.HttpResponse:
              status_code=200
         )
 
-    except ValueError:
+    except ValueError as ve: # Specifically catch JSON parsing errors
+        logging.error(f"Invalid JSON in request body: {ve}. Request body: {req.get_body().decode('utf-8')}")
         return func.HttpResponse(
-             "Invalid JSON in request body.",
+             f"Invalid JSON in request body: {ve}",
              status_code=400
         )
     except Exception as e:
-        logging.error(f"Error processing request: {e}")
+        logging.error(f"Error processing request: {e}", exc_info=True) # exc_info=True for full stack trace
         return func.HttpResponse(
-             f"An error occurred: {e}",
+             f"An internal server error occurred: {e}",
              status_code=500
         )
 
@@ -74,7 +81,7 @@ async def send_c2d_message(device_id, message_payload):
         await registry_manager.send_c2d_message(device_id, message)
         logging.info(f"C2D message sent successfully to device {device_id}.")
     except Exception as e:
-        logging.error(f"Error sending C2D message to {device_id}: {e}")
+        logging.error(f"Error sending C2D message to {device_id}: {e}", exc_info=True)
     finally:
         if registry_manager:
             registry_manager.close()
