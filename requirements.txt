@@ -4,3 +4,4 @@
 
 azure-functions
 azure-iot-hub
+azure-iot-device
