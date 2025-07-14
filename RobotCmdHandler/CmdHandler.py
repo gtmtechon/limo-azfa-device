@@ -17,7 +17,7 @@ async def main(req: func.HttpRequest) -> func.HttpResponse:
 
     try:
         req_body = req.get_json()
-        logging.info(f"Received raw data from Stream Analytics: {req_body}")
+        logging.info(f"==== Received raw data from Stream Analytics: {req_body}")
 
         data_list = []
         if isinstance(req_body, list):
