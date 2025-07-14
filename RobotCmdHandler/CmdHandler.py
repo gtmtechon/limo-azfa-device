@@ -5,10 +5,9 @@ import azure.functions as func
 from azure.iot.hub import IoTHubRegistryManager
 
 # IoT Hub 연결 문자열 (환경 변수로 설정)
-# IOT_HUB_CONNECTION_STRING = os.environ["IoTHubConnectionString"]
+IOT_HUB_CONNECTION_STRING = os.environ["IOT_HUB_CONNECTION_STRING"]
 # NOTE: Hardcoding connection strings is generally not recommended for production.
 # Use Application Settings in Function App for secure storage.
-IOT_HUB_CONNECTION_STRING = "HostName=iothub-iot01.azure-devices.net;DeviceId=water-purifier-robot-01;SharedAccessKey=p5YkARBM6DYIzASe+Mzk95EiYFRjEzeQ63E9hbol/TI="
 ROBOT_DEVICE_ID = "water-purifier-robot-01"
 
 logging.basicConfig(level=logging.INFO)
