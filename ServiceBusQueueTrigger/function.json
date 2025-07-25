@@ -1,0 +1,12 @@
+{
+  "scriptFile": "SendBatteryAlertEmail.py",
+  "bindings": [
+    {
+      "name": "msg",
+      "type": "serviceBusTrigger",
+      "direction": "in",
+      "queueName": "myinputqueue",
+      "connection": ""
+    }
+  ]
+}
