@@ -2,8 +2,8 @@ import logging
 import json
 import os
 import azure.functions as func
-import sendgrid
-from sendgrid.helpers.mail import Email, Mail, Personalization
+#import sendgrid
+#from sendgrid.helpers.mail import Email, Mail, Personalization
 
 logger = logging.getLogger(__name__)
 app = func.FunctionApp() # 기존 app 변수가 있다면 제거하고 이 함수에만 사용
@@ -34,16 +34,18 @@ def main(msg: func.ServiceBusMessage):
         logger.warning(f"Sending email alert: {alert_subject} - {alert_content}")
 
         # SendGrid를 이용한 이메일 발송
-        sg = sendgrid.SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
-        mail = Mail()
-        mail.from_email = Email(os.environ.get('SENDER_EMAIL'))
-        personalization = Personalization()
-        personalization.add_to(Email(os.environ.get('RECIPIENT_EMAIL')))
-        mail.add_personalization(personalization)
-        mail.subject = alert_subject
-        mail.add_content("text/plain", alert_content)
 
-        response = sg.send(mail)
-        logger.info(f"Email sent. Status Code: {response.status_code}")
+        # sg = sendgrid.SendGridAPIClient(os.environ.get('SENDGRID_API_KEY'))
+        # mail = Mail()
+        # mail.from_email = Email(os.environ.get('SENDER_EMAIL'))
+        # personalization = Personalization()
+        # personalization.add_to(Email(os.environ.get('RECIPIENT_EMAIL')))
+        # mail.add_personalization(personalization)
+        # mail.subject = alert_subject
+        # mail.add_content("text/plain", alert_content)
+
+        # response = sg.send(mail)
+        #logger.info(f"Email sent. Status Code: {response.status_code}")
+        logger.info(f"Email sent. Status Code: 200 (Mocked)")
     except Exception as e:
         logger.error(f"Error processing message or sending email: {e}")
