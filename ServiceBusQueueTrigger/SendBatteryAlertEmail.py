@@ -11,7 +11,8 @@ app = func.FunctionApp() # 기존 app 변수가 있다면 제거하고 이 함�
 @app.service_bus_queue_trigger(arg_name="msg",
                                queue_name="robot-battery-alert-queue",
                                connection="AzureWebJobsServiceBus") # local.settings.json에 설정된 이름
-def SendBatteryAlertEmail(msg: func.ServiceBusMessage):
+# def SendBatteryAlertEmail(msg: func.ServiceBusMessage):
+def main(msg: func.ServiceBusMessage):
     logger.info('Python ServiceBus queue trigger processed message.')
 
     try:

@@ -1,0 +1,1 @@
+ServiceBusConnectionString="Endpoint=sb://limosvcbus.servicebus.windows.net/;SharedAccessKeyName=iothubroutes_limo-iothub-waterbot;SharedAccessKey=WY07P3zM491vninpzlkeWwCg63Fdb3iYa+ASbBdmY1I=;EntityPath=robot-battery-alert-queue"
