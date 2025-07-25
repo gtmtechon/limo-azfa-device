@@ -1,12 +1,11 @@
 {
-  "scriptFile": "SendBatteryAlertEmail.py",
-  "bindings": [
+  "scriptFile": "__init__.py",
     {
       "name": "msg",
       "type": "serviceBusTrigger",
       "direction": "in",
-      "queueName": "myinputqueue",
-      "connection": ""
+      "queueName": "robot-battery-alert-queue",
+      "connection": "ServiceBusConnectionString"
     }
   ]
 }
