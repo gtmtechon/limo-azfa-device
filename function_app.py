@@ -49,7 +49,7 @@ def SendBatteryAlertEmail(msg: func.ServiceBusMessage):
     logger.info('Python ServiceBus queue trigger processed message.')
     
     try:
-        message_body = msg.get_body().decode('utf-8')
+        message_body = msg.get_body().decode('utfa-8')
         logger.info(f"Received message body: {message_body}")
         
         # JSON 메시지 파싱
