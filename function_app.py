@@ -2,11 +2,9 @@ import logging
 import json
 import os
 import azure.functions as func
-from azure.servicebus import ServiceBusClient, ServiceBusMessage
 
 # SendGrid 라이브러리 임포트 (메일 발송 함수에 필요)
-import sendgrid
-from sendgrid.helpers.mail import Email, Mail, Personalization
+#import sendgridfrom sendgrid.helpers.mail import Email, Mail, Personalization
 
 # 로거 설정
 logging.basicConfig(level=logging.INFO)
@@ -69,14 +67,14 @@ def SendBatteryAlertEmail(msg: func.ServiceBusMessage):
         logger.warning(f"Sending email alert: {alert_subject} - {alert_content}")
         
         ## 명시적 Dead-Letter 처리
-        if battery_level < 0:
-            logger.error(f"Invalid battery level: {battery_level} for device {device_id}.")
-            # 메시지를 Dead-Letter 큐로 이동
-            msg.dead_letter(
-                dead_letter_reason="InvalidBatteryLevel",
-                dead_letter_error_description="batteryLevel is missing or invalid."
-            )
-            msg.abandon()
+        # if battery_level < 0:
+        #     logger.error(f"Invalid battery level: {battery_level} for device {device_id}.")
+        #     # 메시지를 Dead-Letter 큐로 이동
+        #     msg.dead_letter(
+        #         dead_letter_reason="InvalidBatteryLevel",
+        #         dead_letter_error_description="batteryLevel is missing or invalid."
+        #     )
+        #     msg.abandon()
         
         # SendGrid를 이용한 이메일 발송
         # SENDGRID_API_KEY, SENDER_EMAIL, RECIPIENT_EMAIL 환경 변수를 Azure Function App 설정에 추가해야 함
@@ -103,6 +101,7 @@ def SendBatteryAlertEmail(msg: func.ServiceBusMessage):
         logger.error(f"Invalid JSON format: {e}. Message body: {message_body}")
     except Exception as e:
         logger.error(f"Error processing Service Bus message: {e}", exc_info=True)
+        msg.abandon()
 
 
 
