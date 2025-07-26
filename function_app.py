@@ -73,10 +73,10 @@ def SendBatteryAlertEmail(msg: func.ServiceBusMessage):
             logger.error(f"Invalid battery level: {battery_level} for device {device_id}.")
             # 메시지를 Dead-Letter 큐로 이동
             msg.dead_letter(
-                reason="InvalidBatteryLevel",
-                error_description="batteryLevel is missing or invalid."
+                dead_letter_reason="InvalidBatteryLevel",
+                dead_letter_error_description="batteryLevel is missing or invalid."
             )
-            return
+            msg.abandon()
         
         # SendGrid를 이용한 이메일 발송
         # SENDGRID_API_KEY, SENDER_EMAIL, RECIPIENT_EMAIL 환경 변수를 Azure Function App 설정에 추가해야 함
