@@ -1,4 +1,4 @@
-
+from azure.servicebus import ServiceBusClient, ServiceBusMessage
 import logging
 import json
 import os
@@ -49,7 +49,7 @@ def SendBatteryAlertEmail(msg: func.ServiceBusMessage):
     logger.info('Python ServiceBus queue trigger processed message.')
     
     try:
-        message_body = msg.get_body().decode('utfa-8')
+        message_body = msg.get_body().decode('utf-8')
         logger.info(f"Received message body: {message_body}")
         
         # JSON 메시지 파싱
@@ -67,6 +67,16 @@ def SendBatteryAlertEmail(msg: func.ServiceBusMessage):
         )
         
         logger.warning(f"Sending email alert: {alert_subject} - {alert_content}")
+        
+        ## 명시적 Dead-Letter 처리
+        if battery_level is None or not isinstance(battery_level, (int, float)) or battery_level < 0:
+            logger.error(f"Invalid battery level: {battery_level} for device {device_id}.")
+            # 메시지를 Dead-Letter 큐로 이동
+            msg.dead_letter(
+                reason="InvalidBatteryLevel",
+                error_description="batteryLevel is missing or invalid."
+            )
+            return
         
         # SendGrid를 이용한 이메일 발송
         # SENDGRID_API_KEY, SENDER_EMAIL, RECIPIENT_EMAIL 환경 변수를 Azure Function App 설정에 추가해야 함
@@ -93,3 +103,40 @@ def SendBatteryAlertEmail(msg: func.ServiceBusMessage):
         logger.error(f"Invalid JSON format: {e}. Message body: {message_body}")
     except Exception as e:
         logger.error(f"Error processing Service Bus message: {e}", exc_info=True)
+
+
+
+CONNECTION_STR = "<YOUR_SERVICE_BUS_CONNECTION_STRING>"
+QUEUE_NAME = "<YOUR_QUEUE_NAME>"
+DLQ_NAME = QUEUE_NAME + "/$DeadLetterQueue"
+
+def process_dead_letter_messages():
+    with ServiceBusClient.from_connection_string(CONNECTION_STR) as client:
+        # DLQ Receiver
+        receiver = client.get_queue_receiver(
+            queue_name=DLQ_NAME,
+            max_wait_time=5
+        )
+        sender = client.get_queue_sender(queue_name=QUEUE_NAME)
+
+        with receiver, sender:
+            for msg in receiver:
+                try:
+                    body = str(msg)
+                    print(f"DLQ Message received: {body}")
+
+                    # 재처리 로직: 예를 들어 정상 메시지로 판단되면 다시 정상 큐로 보냄
+                    original_props = msg.application_properties
+                    new_msg = ServiceBusMessage(
+                        json.dumps({"reprocessed": True, "original": body}),
+                        application_properties=original_props
+                    )
+                    sender.send_messages(new_msg)
+                    print("Re-sent to queue.")
+
+                    # DLQ 메시지 삭제
+                    receiver.complete_message(msg)
+
+                except Exception as e:
+                    print(f"Failed to process DLQ message: {e}")
+                    receiver.abandon_message(msg)
